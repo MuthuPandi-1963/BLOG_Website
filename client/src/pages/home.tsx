@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Navigation from "@/components/navigation";
 import CountryFilter from "@/components/country-filter";
@@ -35,7 +35,7 @@ export default function Home() {
   });
 
   // Update articles when data changes
-  useState(() => {
+  useEffect(() => {
     if (data?.articles) {
       if (page === 1) {
         setAllArticles(data.articles);
@@ -43,7 +43,7 @@ export default function Home() {
         setAllArticles(prev => [...prev, ...data.articles]);
       }
     }
-  });
+  }, [data, page]);
 
   const handleCountryChange = (country: string) => {
     setSelectedCountry(country);

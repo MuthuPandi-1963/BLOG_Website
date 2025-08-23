@@ -119,13 +119,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   async upsertArticle(article: InsertArticle): Promise<Article> {
+    const articleData = {
+      ...article,
+      publishedAt: new Date(),
+    };
+    
     const [result] = await db
       .insert(articles)
-      .values(article)
+      .values(articleData)
       .onConflictDoUpdate({
         target: articles.url,
         set: {
-          ...article,
+          ...articleData,
         },
       })
       .returning();

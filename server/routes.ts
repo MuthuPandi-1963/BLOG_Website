@@ -294,10 +294,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const validatedData = insertArticleSchema.parse(req.body);
-      const article = await storage.upsertArticle({
-        ...validatedData,
-        publishedAt: new Date(validatedData.publishedAt || new Date()),
-      });
+      const article = await storage.upsertArticle(validatedData);
       
       res.json(article);
     } catch (error) {
