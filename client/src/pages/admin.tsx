@@ -9,13 +9,36 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Trash2, Users, FileText, Shield, Loader2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Trash2, Users, FileText, Shield, Loader2, Plus } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { insertArticleSchema, type InsertArticle } from "@shared/schema";
 import type { User } from "@shared/schema";
 
 export default function Admin() {
   const { user, isLoading: authLoading, isAuthenticated } = useAuth();
   const { toast } = useToast();
   const [selectedTab, setSelectedTab] = useState("users");
+
+  const form = useForm<InsertArticle>({
+    resolver: zodResolver(insertArticleSchema),
+    defaultValues: {
+      title: "",
+      description: "",
+      content: "",
+      url: "",
+      urlToImage: "",
+      source: "",
+      author: "",
+      country: "us",
+      category: "general",
+    },
+  });
 
   // Redirect to home if not authenticated or not admin
   useEffect(() => {
@@ -42,6 +65,39 @@ export default function Admin() {
     queryKey: ["/api/stats/countries"],
     enabled: !!user?.isAdmin,
     retry: false,
+  });
+
+  const createArticleMutation = useMutation({
+    mutationFn: async (data: InsertArticle) => {
+      return await apiRequest("POST", "/api/admin/articles", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/news"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/stats/countries"] });
+      form.reset();
+      toast({
+        title: "Success",
+        description: "Article created successfully",
+      });
+    },
+    onError: (error) => {
+      if (isUnauthorizedError(error)) {
+        toast({
+          title: "Unauthorized",
+          description: "You are logged out. Logging in again...",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          window.location.href = "/api/login";
+        }, 500);
+        return;
+      }
+      toast({
+        title: "Error",
+        description: "Failed to create article",
+        variant: "destructive",
+      });
+    },
   });
 
   const deleteUserMutation = useMutation({
@@ -81,6 +137,35 @@ export default function Admin() {
     }
   };
 
+  const onSubmit = (data: InsertArticle) => {
+    createArticleMutation.mutate(data);
+  };
+
+  const COUNTRIES = [
+    { code: "us", name: "United States" },
+    { code: "gb", name: "United Kingdom" }, 
+    { code: "de", name: "Germany" },
+    { code: "fr", name: "France" },
+    { code: "jp", name: "Japan" },
+    { code: "ca", name: "Canada" },
+    { code: "au", name: "Australia" },
+    { code: "in", name: "India" },
+    { code: "br", name: "Brazil" },
+    { code: "it", name: "Italy" },
+    { code: "es", name: "Spain" },
+    { code: "mx", name: "Mexico" },
+  ];
+
+  const CATEGORIES = [
+    "general",
+    "business", 
+    "technology",
+    "health",
+    "science",
+    "sports",
+    "entertainment",
+  ];
+
   if (authLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -116,10 +201,14 @@ export default function Admin() {
         </div>
 
         <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3" data-testid="tabs-admin">
+          <TabsList className="grid w-full grid-cols-4" data-testid="tabs-admin">
             <TabsTrigger value="users" data-testid="tab-users">
               <Users className="w-4 h-4 mr-2" />
               Users
+            </TabsTrigger>
+            <TabsTrigger value="add-news" data-testid="tab-add-news">
+              <Plus className="w-4 h-4 mr-2" />
+              Add News
             </TabsTrigger>
             <TabsTrigger value="content" data-testid="tab-content">
               <FileText className="w-4 h-4 mr-2" />
@@ -199,6 +288,203 @@ export default function Admin() {
                     )}
                   </div>
                 )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Add News Tab */}
+          <TabsContent value="add-news" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Add News Article</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6" data-testid="form-add-article">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <FormField
+                        control={form.control}
+                        name="title"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Title</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Article title" {...field} data-testid="input-title" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="source"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Source</FormLabel>
+                            <FormControl>
+                              <Input placeholder="News source" {...field} data-testid="input-source" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <FormField
+                      control={form.control}
+                      name="description"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Description</FormLabel>
+                          <FormControl>
+                            <Textarea 
+                              placeholder="Brief description of the article" 
+                              className="min-h-[100px]"
+                              {...field} 
+                              data-testid="textarea-description"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="content"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Content</FormLabel>
+                          <FormControl>
+                            <Textarea 
+                              placeholder="Full article content" 
+                              className="min-h-[200px]"
+                              {...field} 
+                              data-testid="textarea-content"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <FormField
+                        control={form.control}
+                        name="url"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Article URL</FormLabel>
+                            <FormControl>
+                              <Input placeholder="https://example.com/article" {...field} data-testid="input-url" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="urlToImage"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Image URL</FormLabel>
+                            <FormControl>
+                              <Input placeholder="https://example.com/image.jpg" {...field} data-testid="input-image-url" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <FormField
+                        control={form.control}
+                        name="author"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Author</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Author name" {...field} data-testid="input-author" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="country"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Country</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger data-testid="select-country">
+                                  <SelectValue placeholder="Select country" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {COUNTRIES.map((country) => (
+                                  <SelectItem key={country.code} value={country.code}>
+                                    {country.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="category"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Category</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger data-testid="select-category">
+                                  <SelectValue placeholder="Select category" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {CATEGORIES.map((category) => (
+                                  <SelectItem key={category} value={category}>
+                                    {category.charAt(0).toUpperCase() + category.slice(1)}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <Button 
+                      type="submit" 
+                      className="w-full md:w-auto"
+                      disabled={createArticleMutation.isPending}
+                      data-testid="button-submit-article"
+                    >
+                      {createArticleMutation.isPending ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Creating Article...
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="mr-2 h-4 w-4" />
+                          Create Article
+                        </>
+                      )}
+                    </Button>
+                  </form>
+                </Form>
               </CardContent>
             </Card>
           </TabsContent>

@@ -286,6 +286,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post('/api/admin/articles', isAuthenticated, async (req: any, res) => {
+    try {
+      const currentUser = await storage.getUser(req.user.claims.sub);
+      if (!currentUser?.isAdmin) {
+        return res.status(403).json({ message: 'Admin access required' });
+      }
+
+      const validatedData = insertArticleSchema.parse(req.body);
+      const article = await storage.upsertArticle({
+        ...validatedData,
+        publishedAt: new Date(validatedData.publishedAt || new Date()),
+      });
+      
+      res.json(article);
+    } catch (error) {
+      console.error('Error creating article:', error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: 'Invalid article data', errors: error.errors });
+      }
+      res.status(500).json({ message: 'Failed to create article' });
+    }
+  });
+
   app.delete('/api/admin/users/:id', isAuthenticated, async (req: any, res) => {
     try {
       const currentUser = await storage.getUser(req.user.claims.sub);
