@@ -138,6 +138,7 @@ export default function Admin() {
   };
 
   const onSubmit = (data: InsertArticle) => {
+    console.log('Form submitted with data:', data);
     createArticleMutation.mutate(data);
   };
 

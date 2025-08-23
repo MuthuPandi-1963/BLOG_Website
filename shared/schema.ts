@@ -111,6 +111,7 @@ export const insertUserSchema = createInsertSchema(users).omit({
 export const insertArticleSchema = createInsertSchema(articles).omit({
   id: true,
   createdAt: true,
+  publishedAt: true,
 });
 
 export const insertBookmarkSchema = createInsertSchema(bookmarks).omit({
