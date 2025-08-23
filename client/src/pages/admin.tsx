@@ -42,7 +42,7 @@ export default function Admin() {
 
   // Redirect to home if not authenticated or not admin
   useEffect(() => {
-    if (!authLoading && (!isAuthenticated || !user?.isAdmin)) {
+    if (!authLoading && (!isAuthenticated || !(user as any)?.isAdmin)) {
       toast({
         title: "Unauthorized",
         description: "Admin access required. Redirecting...",
@@ -57,13 +57,13 @@ export default function Admin() {
 
   const { data: usersData, isLoading: usersLoading } = useQuery<UsersResponse>({
     queryKey: ["/api/admin/users"],
-    enabled: !!user?.isAdmin,
+    enabled: !!(user as any)?.isAdmin,
     retry: false,
   });
 
   const { data: statsData } = useQuery<StatsResponse>({
     queryKey: ["/api/stats/countries"],
-    enabled: !!user?.isAdmin,
+    enabled: !!(user as any)?.isAdmin,
     retry: false,
   });
 
@@ -174,7 +174,7 @@ export default function Admin() {
     );
   }
 
-  if (!user?.isAdmin) {
+  if (!(user as any)?.isAdmin) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <Card className="w-full max-w-md">
@@ -262,7 +262,7 @@ export default function Admin() {
                           <span className="text-xs text-gray-400">
                             Joined {userData.createdAt ? new Date(userData.createdAt).toLocaleDateString() : 'Unknown'}
                           </span>
-                          {userData.id !== user.id && (
+                          {userData.id !== (user as any)?.id && (
                             <Button
                               variant="destructive"
                               size="sm"
@@ -341,7 +341,8 @@ export default function Admin() {
                             <Textarea 
                               placeholder="Brief description of the article" 
                               className="min-h-[100px]"
-                              {...field} 
+                              {...field}
+                              value={field.value || ""}
                               data-testid="textarea-description"
                             />
                           </FormControl>
@@ -360,7 +361,8 @@ export default function Admin() {
                             <Textarea 
                               placeholder="Full article content" 
                               className="min-h-[200px]"
-                              {...field} 
+                              {...field}
+                              value={field.value || ""}
                               data-testid="textarea-content"
                             />
                           </FormControl>
@@ -391,7 +393,7 @@ export default function Admin() {
                           <FormItem>
                             <FormLabel>Image URL</FormLabel>
                             <FormControl>
-                              <Input placeholder="https://example.com/image.jpg" {...field} data-testid="input-image-url" />
+                              <Input placeholder="https://example.com/image.jpg" {...field} value={field.value || ""} data-testid="input-image-url" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -407,7 +409,7 @@ export default function Admin() {
                           <FormItem>
                             <FormLabel>Author</FormLabel>
                             <FormControl>
-                              <Input placeholder="Author name" {...field} data-testid="input-author" />
+                              <Input placeholder="Author name" {...field} value={field.value || ""} data-testid="input-author" />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -420,7 +422,7 @@ export default function Admin() {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Country</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <Select onValueChange={field.onChange} value={field.value || "us"} defaultValue="us">
                               <FormControl>
                                 <SelectTrigger data-testid="select-country">
                                   <SelectValue placeholder="Select country" />
@@ -445,7 +447,7 @@ export default function Admin() {
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>Category</FormLabel>
-                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <Select onValueChange={field.onChange} value={field.value || "general"} defaultValue="general">
                               <FormControl>
                                 <SelectTrigger data-testid="select-category">
                                   <SelectValue placeholder="Select category" />
@@ -552,7 +554,7 @@ export default function Admin() {
               <CardContent>
                 {statsData?.stats?.length > 0 ? (
                   <div className="space-y-3" data-testid="country-stats">
-                    {statsData.stats.map((stat: { country: string; count: number }) => (
+                    {statsData.stats?.map((stat: { country: string; count: number }) => (
                       <div 
                         key={stat.country}
                         className="flex justify-between items-center p-3 bg-gray-50 rounded-lg"
