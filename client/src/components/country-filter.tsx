@@ -41,9 +41,9 @@ export default function CountryFilter({
     retry: false,
   });
 
-  const getArticleCount = (countryName: string): number => {
+  const getArticleCount = (countryCode: string): number => {
     if (!statsData?.stats) return 0;
-    const stat = statsData.stats.find((s: any) => s.country === countryName);
+    const stat = statsData.stats.find((s: any) => s.country === countryCode);
     return stat ? stat.count : 0;
   };
 
@@ -72,7 +72,7 @@ export default function CountryFilter({
       <div className="space-y-2 mb-6">
         {FEATURED_COUNTRIES.map((country) => {
           const isSelected = selectedCountry === country.code;
-          const articleCount = getArticleCount(country.name);
+          const articleCount = getArticleCount(country.code);
           
           return (
             <Button
