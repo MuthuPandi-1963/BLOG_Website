@@ -37,7 +37,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
 
       // If no articles in database, fetch from NewsAPI
-      if (articles.length === 0 && page === 1) {
+      if (articles.length === 0 && Number(page) === 1) {
         try {
           const newsArticles = await newsApi.fetchTopHeadlines(
             country as string, 
@@ -56,7 +56,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               source: newsArticle.source.name,
               author: newsArticle.author || '',
               publishedAt: new Date(newsArticle.publishedAt),
-              country: country ? newsApi.getCountryName(country as string) : 'Global',
+              country: country as string || 'global',
               category: category as string || 'general',
             };
 
@@ -109,7 +109,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               source: newsArticle.source.name,
               author: newsArticle.author || '',
               publishedAt: new Date(newsArticle.publishedAt),
-              country: country ? newsApi.getCountryName(country as string) : 'Global',
+              country: country as string || 'global',
               category: 'general',
             };
 
